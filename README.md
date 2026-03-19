@@ -70,7 +70,7 @@ src/
 
 ```json
 {
-  "email": "user@email.com",
+  "username": "user@email.com",
   "password": "123456"
 }
 ```
@@ -83,7 +83,7 @@ src/
 
 ```json
 {
-  "email": "user@email.com",
+  "username": "user@email.com",
   "password": "123456"
 }
 ```
