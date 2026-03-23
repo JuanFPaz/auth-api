@@ -1,53 +1,58 @@
 import { Request, Response } from "express";
-import bycrpt from 'bcrypt'
 import { signToken } from "../utils/jwt";
-import { getUsers, createUser, verificarUser } from '../models/user.model'
-import { handleError } from '../utils/errorHandler';
-type user = {
-    username: string,
-    password: string
-}
+import DataBase, {type userLogin, type userRegister, type userData } from "../models/user.model";
+import { handleError } from "../utils/errorHandler";
+
 //Register
 
 export const base = async (req: Request, res: Response) => {
-    try {
-        res.json({ users: getUsers() })
-    } catch (err) {
-        handleError(err, res, 'Base');
-    }
-}
+  try {
+    const users = await DataBase.getUsers()
+    res.json({users});
+  } catch (err) {
+    handleError(err, res, "Base");
+  }
+};
 
 export const register = async (req: Request, res: Response) => {
-    const { username, password }: user = req.body
-    try {
-        const existeUsuario = verificarUser(username)
-        if (existeUsuario) return res.status(404).json({ message: 'User alredy exists' })
-        const hashPass = await bycrpt.hash(password, 10)
-        createUser({ username, password: hashPass })
-        res.status(202).json({ message: 'Usuario creado correctamente!' })
-    } catch (err) {
-        handleError(err, res, 'Register');
-    }
+  const { username, password, info }: userRegister = req.body;
+  try {
+    const existUser = await DataBase.getUser(username);
+    //TODO existMail
+    if (existUser) return res.status(404).json({ status:404,message: "Ya existe un usuario con ese nombre" });
+    await DataBase.createUser({ username, password, info });
+    res.status(201).json({status:201, message: "Usuario creado correctamente!" });
+  } catch (err) {
+    handleError(err, res, "Register");
+  }
 };
-
 
 //Login
-
 export const login = async (req: Request, res: Response) => {
-    const { username, password }: user = req.body
+  const { username, password }: userLogin = req.body;
 
-    try {
-        const user = verificarUser(username)
-        if (!user) return res.status(400).json({ message: 'Invalid Credentials' })
+  try {
+    const {user,matchpass} = await DataBase.getUserLog({username, password});
+    if (!user) return res.status(404).json({ status:404, message: "Nombre de Usuario Incorrecto" });
 
-        const matchPass = await bycrpt.compare(password, user.password)
-        if (!matchPass) return res.status(400).json({ message: 'Invalid Credentials' })
+    if (!matchpass) return res.status(404).json({ status:404, message: "Contraseña de Usuario Incorrecta" });
 
-        const payload = { id: user.id, name: user.username }
+    const payload = {id: user.id};
 
-        const token = signToken(payload)
-        res.status(202).json({ message: 'Usuario ingresado correctamente', token })
-    } catch (err) {
-        handleError(err, res, 'Login');
-    }
+    const token = signToken(payload);
+    res.status(200).json({ status:200, message: "Usuario ingresado correctamente", token });
+  } catch (err) {
+    handleError(err, res, "Login");
+  }
 };
+
+export const user = async (req:Request, res:Response) =>{
+  const {id}: userData = req.body
+  try {
+    const user = await DataBase.getUserById(id)
+    if(!user) return res.status(500).json({status: 500, message:'Error, usuario esta vacio?'})
+    res.status(202).json({message:'Usuario Autorizado', ...user})
+  } catch (error) {
+    
+  }
+}

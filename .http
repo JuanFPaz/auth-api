@@ -8,23 +8,21 @@ POST {{Host}}/register
 Content-Type: application/json
 
 {
-  "userName": "FonBuu",
-  "password": "12313212"
+  "username": "ReyLeon",
+  "password": "",
+  "info":{
+    "name":"Peperino",
+    "lastname":"Paz",
+    "email":"peperino14@hotmail.com",
+    "birthday":"05/11/2005",
+    "country":"Argentina"
+  }
 }
-
 ###
 POST {{Host}}/login
 Content-Type: application/json
 
 {
-  "userName": "FonBuu",
-  "password": "12313212"
+  "username":"reyleon",
+  "password":""
 }
-
-### LUXA
-GET  {{Host}}/me
-Authorization: Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6Ijk1MDljYjQ1LTMzZjctNGFmNi05YzU4LWY2NzA3OGNkZTFiMCIsIm5hbWUiOiJMdXhhUGF6IiwiaWF0IjoxNzczOTA1NDc4LCJleHAiOjE3NzM5MDYzNzh9.ryhTnhlzuKlTZ9LKgq1IrUwQV80zubestopDIAt8JdmfAHRhz6TW0u5BNUIL0NgaTkS8zdk-Fl5xay16ykl4uA
-
-### Fonky
-GET  {{Host}}/me
-Authorization: Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNjYjFhNWRkLTZmYTItNDc3MC1hNzY0LWE3NzM5MTZmMmQ3ZSIsIm5hbWUiOiJGb25CdXUiLCJpYXQiOjE3NzM5MDU1NDIsImV4cCI6MTc3MzkwNjQ0Mn0.29VMU4AUNVSHeRhMMSTgczuGNKDIbXKKzlSGd5-sl9aUEUtYPe91IcBUCrI-aak_MTpPWnn92Hs4u059RboCjA

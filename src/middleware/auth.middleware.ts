@@ -7,17 +7,16 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
     const [scheme, token] = authHeader.split(' ');
 
     if (scheme !== 'Bearer' || !token) {
-        return res.status(401).json({ message: 'Missing or invalid Authorization header' });
+        return res.status(401).json({ status:401, message: 'Missing or invalid Authorization header' });
     }
 
     try {
         const decoded = verifyToken(token);
-        console.log(decoded);
         
-        (req as any).user = { id: decoded.id, username: decoded.name }
+        req.body = { id: decoded.id }
         next();
     } catch (err) {
-        res.status(401).json({ message: 'Invalid or expired token' });
+        res.status(401).json({ status:401, message: 'Invalid or expired token' });
         return;
     }
 };
