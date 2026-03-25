@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
+    "build:prod": "npm install && npm run build",
     "start": "node build/index.js"
   },
   "dependencies": {
