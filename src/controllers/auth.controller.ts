@@ -44,8 +44,8 @@ export const login = async (req: Request, res: Response) => {
     res.status(200)
       .cookie('access_token', token,{
         httpOnly:true,
-        secure: false, //TRUE EN PRODUCCION
-        sameSite: 'lax', //NONE EN PRODUCCION
+        secure: true, //TRUE EN PRODUCCION
+        sameSite: 'none', //NONE EN PRODUCCION
         maxAge: 1000*60*60
     })
       .json({ status:200, message: "Usuario ingresado correctamente" });
