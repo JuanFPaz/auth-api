@@ -8,8 +8,8 @@ const PORT = process.env.PORT ?? 3000;
 
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
-    credentials: true, // Exigimos al front que nos envie credenciales, para recibir las cookies
+    origin: "http://localhost:5173",
+    credentials: true,
     methods: ["GET", "POST"],
   }),
 );
