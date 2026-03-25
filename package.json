@@ -10,7 +10,6 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
-    "quick": "ts-node-dev src/models/user.model.ts",
     "start": "node build/index.js"
   },
   "dependencies": {
