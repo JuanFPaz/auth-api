@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { register, login, base, user } from '../controllers/auth.controller';
+import { register, login, base, user, logout } from '../controllers/auth.controller';
 import { protect } from '../middleware/auth.middleware';
 
 const router = express.Router();
@@ -15,8 +15,12 @@ router.post('/login', (req: Request, res: Response, next: NextFunction) => {
     login(req, res).catch(next);
 });
 
-router.get('/me', protect, (req, res) => {
+router.get('/me', protect, (req:Request, res:Response) => {
     user(req,res)
 });
+
+router.post('/logout', protect,(req:Request,res:Response)=>{
+    logout(req,res)
+})
 
 export default router;

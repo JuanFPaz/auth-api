@@ -40,14 +40,28 @@ export const login = async (req: Request, res: Response) => {
     const payload = {id: user.id};
 
     const token = signToken(payload);
-    res.status(200).json({ status:200, message: "Usuario ingresado correctamente", token });
+    
+    res.status(200)
+      .cookie('access_token', token,{
+        httpOnly:true,
+        secure: false, //TRUE EN PRODUCCION
+        sameSite: 'lax', //NONE EN PRODUCCION
+        maxAge: 1000*60*60
+    })
+      .json({ status:200, message: "Usuario ingresado correctamente" });
   } catch (err) {
     handleError(err, res, "Login");
   }
 };
 
+export const logout = async (req:Request, res:Response) =>{
+  res.status(200)
+    .clearCookie('access_token')
+    .json({status:200, message:'Usuario desconectado correctamente'})
+} 
+
 export const user = async (req:Request, res:Response) =>{
-  const {id}: userData = req.body
+  const {id}: userData = (req as any).user
   try {
     const user = await DataBase.getUserById(id)
     if(!user) return res.status(500).json({status: 500, message:'Error, usuario esta vacio?'})
