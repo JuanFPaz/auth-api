@@ -40,14 +40,14 @@ export const login = async (req: Request, res: Response) => {
     const payload = {id: user.id};
 
     const token = signToken(payload);
-
+    
     res.status(200)
       .cookie('access_token', token,{
         httpOnly:true,
-        secure:false, // true en produccion
-        sameSite:'lax', // none en produccion
-        maxAge: 1000 * 60 * 60,
-      })
+        secure: false, //TRUE EN PRODUCCION
+        sameSite: 'lax', //NONE EN PRODUCCION
+        maxAge: 1000*60*60
+    })
       .json({ status:200, message: "Usuario ingresado correctamente" });
   } catch (err) {
     handleError(err, res, "Login");
