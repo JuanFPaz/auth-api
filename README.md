@@ -12,6 +12,8 @@ API REST básica que implementa autenticación de usuarios utilizando JSON Web T
 * JWT (jsonwebtoken)
 * bcrypt
 * dotenv
+* cookie-parser
+* cors
 
 ---
 
@@ -34,7 +36,6 @@ npm install
 
 ```env
 JWT_SECRET=supersecreto
-PORT=3000
 ```
 
 ---
@@ -44,6 +45,7 @@ PORT=3000
 ```bash
 npm run dev     # Ejecuta en modo desarrollo
 npm run build   # Compila TypeScript a JavaScript
+npm run build:prod   # Instala dependencias y ejecuta npm run build para produccion
 npm start       # Ejecuta versión compilada
 ```
 
@@ -70,8 +72,15 @@ src/
 
 ```json
 {
-  "username": "user@email.com",
-  "password": "123456"
+  "username": "ReyLeon",
+  "password": "1234",
+  "info":{
+    "name":"Peperino",
+    "lastname":"Paz",
+    "email":"peperino14@hotmail.com",
+    "birthday":"05/11/2005",
+    "country":"Argentina"
+  }
 }
 ```
 
@@ -83,29 +92,41 @@ src/
 
 ```json
 {
-  "username": "user@email.com",
-  "password": "123456"
+  "username": "ReyLeon",
+  "password": "1234",
 }
 ```
 
 📌 Respuesta:
 
-```json
-{
-  "token": "jwt_token_aqui"
-}
+- Se envia el `acces_token` a traves de las cookies mediante esta configuracion:
+
+```ts
+    res.status(200)
+      .cookie('access_token', token,{
+        httpOnly:true,
+        secure: true, //TRUE EN PRODUCCION | FALSE EN DESARROLLO
+        sameSite: 'none', //NONE EN PRODUCCION | LAX EN DESARROLLO
+        maxAge: 1000*60*60
+    })
+      .json({ status:200, message: "Usuario ingresado correctamente" });
 ```
+
+- En mi caso, el `front` y el `back` se encuentran en dos ecosistemas distintos. Si tuvieramos un `Server-Side Rendering`, el `sameSite` deberia ser `strict`
 
 ---
 
 ### 🔒 Ruta protegida
 
-**GET** `/profile`
+**GET** `/me`
 
-📌 Headers:
+- Se Busca el `acces_token` creado en `/login`, al recibir la solicitud
 
-```
-Authorization: Bearer tu_token
+
+```ts
+    const token = req.cookies.access_token
+
+    if(!token) return res.status(401).json({ status:401, message: 'Missing or invalid Authorization header' });
 ```
 
 ---
@@ -129,7 +150,7 @@ Authorization: Bearer tu_token
 
 ## 📌 Mejoras futuras
 
-* Integración con base de datos (PostgreSQL / MongoDB)
+* Integración con base de datos (MySql / MongoDB)
 * Sistema de roles y permisos
 * Refresh tokens
 * Validaciones avanzadas

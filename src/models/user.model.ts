@@ -15,7 +15,13 @@ export type userData = {
   id: string;
   username: string;
   info: info;
+  session:session;
 };
+
+type session = {
+  createdAt:number,
+  lastSessionAt?:number
+}
 
 type info = {
   name: string;
@@ -36,6 +42,7 @@ class User {
   private _username: string;
   private _password: string;
   private _info: info;
+  private _session?:session;
 
   constructor(u: userRegister) {
     this._id = crypto.randomUUID();
@@ -56,6 +63,9 @@ class User {
     return this._info;
   }
 
+  public get session(): session {
+    return this._session!;
+  }
   public async hash() {
     const hash = await bycrpt.hash(this._password, 10);
     this._password = hash;
