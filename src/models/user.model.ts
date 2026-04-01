@@ -1,8 +1,18 @@
-import bycrpt from "bcrypt";
+import { createPool, RowDataPacket } from "mysql2/promise";
+import { option } from "../utils/config";
+import bcrypt from "bcrypt";
 
 export type userRegister = {
   username: string;
   password: string;
+  info: info;
+};
+
+export type userAuth = {
+  id: string;
+  username: string;
+  verificated: number;
+  createdAt: string;
   info: info;
 };
 
@@ -14,41 +24,42 @@ export type userLogin = {
 export type userData = {
   id: string;
   username: string;
-  info: info;
-  session:session;
+  verificated: number;
+  createdAt: Date;
+  name: string;
+  lastname: string;
+  email: string;
+  birthday: Date;
+  country: string;
 };
-
-type session = {
-  createdAt:number,
-  lastSessionAt?:number
-}
 
 type info = {
   name: string;
   lastname: string;
   email: string;
-  birthday: string;
+  birthday: string | Date;
   country: string;
-};
-
-type filterUser = {
-  id: string;
-  username: string;
-  info: info;
 };
 
 class User {
   private _id: string;
+  private _verificated: number;
   private _username: string;
-  private _password: string;
   private _info: info;
-  private _session?:session;
+  private _createdAt: Date;
 
-  constructor(u: userRegister) {
-    this._id = crypto.randomUUID();
+  constructor(u: userData) {
+    this._id = u.id;
     this._username = u.username;
-    this._password = u.password;
-    this._info = u.info;
+    this._createdAt = u.createdAt;
+    this._verificated = u.verificated;
+    this._info = {
+      name: u.name,
+      lastname: u.lastname,
+      email: u.email,
+      birthday: u.birthday,
+      country: u.country,
+    };
   }
 
   public get id(): string {
@@ -59,94 +70,136 @@ class User {
     return this._username;
   }
 
+  public get verificated(): number {
+    return this._verificated;
+  }
+
   public get info(): info {
-    return this._info;
+    return {
+      ...this._info,
+      birthday: this._info.birthday.toLocaleString().split(",").join(""),
+    };
   }
 
-  public get session(): session {
-    return this._session!;
-  }
-  public async hash() {
-    const hash = await bycrpt.hash(this._password, 10);
-    this._password = hash;
-  }
-
-  public async compare(pass: string): Promise<boolean> {
-    const matchPass = await bycrpt.compare(pass, this._password);
-    return matchPass;
+  public get createdAt(): string {
+    return this._createdAt.toLocaleString().split(",").join("");
   }
 }
 
-export default class DataBase {
-  private static db: User[] = [];
+export class UserReposity {
+  private static connection = createPool({ ...option });
 
-  public static async createUser(user: userRegister) {
-    const _user = new User(user);
-    await _user.hash();
-    this.db.push(_user);
-  }
-
-  public static async getUsers(): Promise<filterUser[]> {
-    const _userMap: filterUser[] = this.db.map(({ id, username, info }) => {
-      return {
-        id,
-        username,
-        info,
-      };
-    });
-    console.log(_userMap);
-    return _userMap;
-  }
-
-  //Para Register
-  public static async getUser(name: string): Promise<filterUser | undefined> {
-    const [_user] = this.db.filter(
-      (u) => u.username.toLowerCase() === name.toLowerCase(),
-    );
-    if (!_user) return _user;
-    const { id, username, info } = _user;
-    return {
-      id,
-      username,
-      info,
-    };
-  }
-
-  //Para Login
-  public static async getUserLog(user: userLogin): Promise<filterPayload> {
-    const [_user] = this.db.filter(
-      (u) => u.username.toLowerCase() === user.username.toLowerCase(),
-    );
-
-    if (!_user) return { user: _user, matchpass: false };
-    const matchpass = await _user.compare(user.password);
-    return {
-      user: {
-        id: _user.id,
-      },
-      matchpass,
-    };
-  }
-  //Para Auth
-  public static async getUserById(
-    _id: string,
-  ): Promise<filterUser | undefined> {
-    const [_user] = this.db.filter((u) => u.id === _id);
-    if (!_user) return _user;
-    const { id, username, info } = _user;
-    return {
-      id,
-      username,
-      info,
-    };
-  }
-}
-
-type filterPayload = {
-  user:
-    | {
-        id: string;
+  //REGISTER
+  static async getUserByUsername(username: string):Promise<{status:'exist'} | {status:'success'}> {
+    try {
+      const [res] = await this.connection.execute<RowDataPacket[]>(
+        `SELECT user.username FROM user WHERE user.username = ?`,
+        [username],
+      );
+      if (res.length !== 0){
+        return {
+          status: 'exist',
+        };
       }
-    | undefined;
-  matchpass: boolean;
-};
+
+      return {
+        status:'success'
+      }
+
+    } catch (error) {
+      throw (error as Error).message;
+    }
+  }
+
+  static async getUserByEmail(email: string):Promise<{status:'exist'} | {status:'success'}>  {
+    try {
+      const [res] = await this.connection.execute<RowDataPacket[]>(
+        `SELECT info.email FROM info WHERE info.email = ?`,
+        [email],
+      );
+      if (res.length !== 0){
+        return {
+          status: 'exist'
+        };
+      }
+
+      return {
+        status:'success'
+      }
+    } catch (error) {
+      throw (error as Error).message;
+    }
+  }
+
+  static async createUser(_user: userRegister) {
+    try {
+      const [infoResult]: any = await this.connection.execute(
+        `INSERT INTO info(name, lastname, email, birthday, country)
+       VALUES (?, ?, ?, ?, ?)`,
+        [
+          _user.info.name,
+          _user.info.lastname,
+          _user.info.email,
+          _user.info.birthday,
+          _user.info.country,
+        ],
+      );
+
+      const infoId = infoResult.insertId;
+      const hassPassword = await bcrypt.hash(_user.password, 10);
+
+      const [userResult] = await this.connection.execute(
+        `INSERT INTO user(username, password, info_id)
+       VALUES (?, ?, ?)`,
+        [_user.username, hassPassword, infoId],
+      );
+    } catch (error) {
+      throw (error as Error).message;
+    }
+  }
+
+  //LOGIN
+  static async getPayload(_user: userLogin): Promise<{status:'notexist'} |{status:'notmatched' } | {status:'success', payload:{id:string}}>{
+    try {
+      const [res] = await this.connection.execute<RowDataPacket[]>(
+        "SELECT user.id, user.password FROM user WHERE user.username = ?",
+        [_user.username],
+      );
+      if(res.length === 0) return {status:'notexist'}
+      
+      const user: { id: string; password: string } = {
+        id: res[0].id,
+        password: res[0].password,
+      };
+
+      const match = await bcrypt.compare(_user.password, user.password);
+
+      if (!match) return { status:'notmatched' };
+
+      return {
+        status: 'success',
+        payload: { id: user.id },
+      };
+    } catch (error) {
+      throw (error as Error).message;
+    }
+  }
+
+  //AUTH
+  public static async getUserById(_id: string): Promise<userAuth> {
+    try {
+      const SQL = `
+      SELECT user.id, user.username, user.verificated, user.createdAt, info.name, info.lastname, info.email,info.birthday,info.country FROM user
+      INNER JOIN info
+      ON user.info_id = info.id
+      WHERE user.id = ?`;
+      const [res] = await this.connection.execute<RowDataPacket[]>(SQL, [_id]);
+      const { id, username, createdAt, verificated, info }: userAuth = new User(
+        res[0] as userData,
+      );
+      return { id, username, createdAt, verificated, info };
+    } catch (error) {
+      throw (error as Error).message;
+    }
+  }
+}

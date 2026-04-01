@@ -1,42 +1,29 @@
 import { Request, Response } from "express";
 import { signToken } from "../utils/jwt";
-import DataBase, {
-  type userLogin,
-  type userRegister,
+import {
+  userLogin,
+  userRegister,
+  UserReposity,
   type userData,
 } from "../models/user.model";
 import { handleError } from "../utils/errorHandler";
 
 //Register
-
-export const base = async (req: Request, res: Response) => {
-  try {
-    const users = await DataBase.getUsers();
-    res.json({ users });
-  } catch (err) {
-    handleError(err, res, "Base");
-  }
-};
-
 export const register = async (req: Request, res: Response) => {
-  const { username, password, info }: userRegister = req.body;
+  const user:userRegister = req.body
   try {
-    const existUser = await DataBase.getUser(username);
-    if (existUser)
-      return res
-        .status(404)
-        .json({ status: 404, message: "Ya existe un usuario con ese nombre" });
+    const existUser = await UserReposity.getUserByUsername(user.username)
+    if(existUser.status === 'exist') return res.status(409).json({status:409, message:"Este nombre de usuario ya esta registrado"})
 
-    await DataBase.createUser({
-      username,
-      password,
-      info
-    });
+    const existMail = await UserReposity.getUserByEmail(user.info.email)
+    if(existMail.status === 'exist') return res.status(409).json({status:409, message:"Este email ya esta registrado"})
+
+    await UserReposity.createUser(user);
     res.status(201).json({
       status: 201,
-      message: "Usuario creado correctamente!",
-      user: { username, password, info },
+      message: 'Usuario registrado con exito.'
     });
+
   } catch (err) {
     handleError(err, res, "Register");
   }
@@ -44,36 +31,26 @@ export const register = async (req: Request, res: Response) => {
 
 //Login
 export const login = async (req: Request, res: Response) => {
-  const { username, password }: userLogin = req.body;
+    const user:userLogin = req.body
 
   try {
-    const { user, matchpass } = await DataBase.getUserLog({
-      username,
-      password,
-    });
-    if (!user)
+    const getPayload = await UserReposity.getPayload(user);
+    if(getPayload.status === 'notexist') return res.status(404).json({status:404, message:'Usuario Incorrecto'})
+    if(getPayload.status === 'notmatched') return res.status(404).json({ status: 404, message:'Contraseña Incorrecta' })
+      
+      const {payload} = getPayload;
+      const token = signToken(payload!);
       return res
-        .status(404)
-        .json({ status: 404, message: "Nombre de Usuario Incorrecto" });
+        .status(200)
+        .cookie("access_token", token, {
+          httpOnly: true,
+          secure: false, //TRUE EN PRODUCCION
+          sameSite: "lax", //NONE EN PRODUCCION
+          maxAge: 1000 * 60 * 60,
+        })
+        .json({ status: 200, message: 'Usuario ingresado con exito.' })
+    
 
-    if (!matchpass)
-      return res
-        .status(404)
-        .json({ status: 404, message: "Contraseña de Usuario Incorrecta" });
-
-    const payload = { id: user.id };
-
-    const token = signToken(payload);
-
-    res
-      .status(200)
-      .cookie("access_token", token, {
-        httpOnly: true,
-        secure: true, //TRUE EN PRODUCCION
-        sameSite: "none", //NONE EN PRODUCCION
-        maxAge: 1000 * 60 * 60,
-      })
-      .json({ status: 200, message: "Usuario ingresado correctamente" });
   } catch (err) {
     handleError(err, res, "Login");
   }
@@ -89,11 +66,13 @@ export const logout = async (req: Request, res: Response) => {
 export const user = async (req: Request, res: Response) => {
   const { id }: userData = (req as any).user;
   try {
-    const user = await DataBase.getUserById(id);
+    const user = await UserReposity.getUserById(id);
     if (!user)
       return res
         .status(500)
         .json({ status: 500, message: "Error, usuario esta vacio?" });
     res.status(202).json({ message: "Usuario Autorizado", ...user });
-  } catch (error) {}
+  } catch (error) {
+        handleError(error, res, "user");
+  }
 };
