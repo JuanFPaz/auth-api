@@ -14,6 +14,7 @@ export const check = async (req:Request, res:Response) => {
     const check = await UserReposity.checkConnection();
     return res.json({...check})
   } catch (error) {
+    console.log('Estamos en el error de Check')
     handleError(error, res, "Check");
   }
 };

@@ -119,13 +119,16 @@ class User {
 export class UserReposity {
   private static connection = createPool({ ...option });
 
-  static async checkConnection(){
+  static async checkConnection() {
     try {
-      const [rows] = await this.connection.query("SELECT 1")
+      console.log('CHEQUEANDO COSOS');
+      
+      const [rows] = await this.connection.query("SELECT 1");
 
-      return {status:'ok', rows}
+      return { status: "ok", rows };
     } catch (error) {
-      throw (error as Error).message
+      console.error("ERROR REAL:", error);
+      throw (error as Error).message;
     }
   }
 
@@ -202,7 +205,9 @@ export class UserReposity {
   }
 
   //LOGIN
-  static async getPayload(_user: userLogin): Promise<
+  static async getPayload(
+    _user: userLogin,
+  ): Promise<
     | { status: "notexist" }
     | { status: "notmatched" }
     | { status: "success"; payload: { id: string } }
@@ -241,9 +246,14 @@ export class UserReposity {
       ON user.info_id = info.id
       WHERE user.id = ?`;
       const [res] = await this.connection.execute<RowDataPacket[]>(SQL, [_id]);
-      const { id, username, createdAt, verificated, info, lastSession }: userAuth = new User(
-        res[0] as userData,
-      );
+      const {
+        id,
+        username,
+        createdAt,
+        verificated,
+        info,
+        lastSession,
+      }: userAuth = new User(res[0] as userData);
       return { id, username, createdAt, verificated, info, lastSession };
     } catch (error) {
       throw (error as Error).message;
