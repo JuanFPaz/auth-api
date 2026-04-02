@@ -111,7 +111,6 @@ class User {
     const hour = cat.getHours().toString().padStart(2, "0");
     const minutes = cat.getMinutes().toString().padStart(2, "0");
     const seconds = cat.getSeconds().toString().padStart(2, "0");
-    console.log(hour, minutes, seconds);
 
     return `${getDate} ${hour}:${minutes}:${seconds}`;
   }
