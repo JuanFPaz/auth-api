@@ -121,13 +121,11 @@ export class UserReposity {
 
   static async checkConnection() {
     try {
-      console.log('CHEQUEANDO COSOS');
       
       const [rows] = await this.connection.query("SELECT 1");
 
       return { status: "ok", rows };
     } catch (error) {
-      console.error("ERROR REAL:", error);
       throw (error as Error).message;
     }
   }
