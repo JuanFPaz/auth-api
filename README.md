@@ -14,6 +14,7 @@ API REST básica que implementa autenticación de usuarios utilizando JSON Web T
 * dotenv
 * cookie-parser
 * cors
+* mysql2
 
 ---
 
@@ -36,6 +37,11 @@ npm install
 
 ```env
 JWT_SECRET=supersecreto
+DBPWD = mipassword
+DBUSER = miuser
+DBHOST = mihost
+DBSCHEME = mischeme
+DBPORT = miport
 ```
 
 ---
@@ -143,14 +149,12 @@ src/
 ## ⚠️ Notas
 
 * Este proyecto es una implementación educativa
-* No incluye base de datos (los datos se almacenan en memoria)
 * Ideal como base para proyectos más complejos
 
 ---
 
 ## 📌 Mejoras futuras
 
-* Integración con base de datos (MySql / MongoDB)
 * Sistema de roles y permisos
 * Refresh tokens
 * Validaciones avanzadas
