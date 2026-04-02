@@ -120,6 +120,16 @@ class User {
 export class UserReposity {
   private static connection = createPool({ ...option });
 
+  static async checkConnection(){
+    try {
+      const [rows] = await this.connection.query("SELECT 1")
+
+      return {status:'ok', rows}
+    } catch (error) {
+      throw (error as Error).message
+    }
+  }
+
   //REGISTER
   static async getUserByUsername(
     username: string,
