@@ -1,8 +1,12 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { register, login,  user, logout } from '../controllers/auth.controller';
+import { register, login,  user, logout, check } from '../controllers/auth.controller';
 import { protect } from '../middleware/auth.middleware';
 
 const router = express.Router();
+
+router.get('/',(req,res,next)=>{
+    check(req,res).catch(next)
+})
 
 router.post('/register', (req: Request, res: Response, next: NextFunction) => {
     register(req, res).catch(next);
