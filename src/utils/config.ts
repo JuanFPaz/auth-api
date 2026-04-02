@@ -4,8 +4,15 @@ dotenv.config();
 
 // Options para createConnection
 export const option:ConnectionOptions = {
-  host: process.env.HOST!,
-  user: process.env.USER!,
-  password: process.env.PWD!, //Si es PHPMyAmdmin, va sin contraseña.
-  database: process.env.DB!, // BD: my_first_scheme
+  host: process.env.DBHOST!,
+  port: Number(process.env.DBPORT!),
+  user: process.env.DBUSER!,
+  password: process.env.DBPWD!,
+  database: process.env.DBSCHEME!,
+  waitForConnections:true,
+  connectionLimit:10,
+  queueLimit:0,
+  ssl:{
+    rejectUnauthorized:false
+  }
 };
