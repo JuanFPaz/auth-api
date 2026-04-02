@@ -13,6 +13,7 @@ export type userAuth = {
   username: string;
   verificated: number;
   createdAt: string;
+  lastSession: string;
   info: info;
 };
 
@@ -47,6 +48,7 @@ class User {
   private _username: string;
   private _info: info;
   private _createdAt: Date;
+  private _lastSession: Date;
 
   constructor(u: userData) {
     this._id = u.id;
@@ -60,6 +62,7 @@ class User {
       birthday: u.birthday,
       country: u.country,
     };
+    this._lastSession = new Date(Date.now());
   }
 
   public get id(): string {
@@ -75,14 +78,42 @@ class User {
   }
 
   public get info(): info {
+    const bd: Date = this._info.birthday as Date; // OUTPUT: 2005-02-01T03:00:00.000Z como Date
+    const ISOSformat = bd.toISOString(); // Convertimos a bd en string, con el mismo formato que arriba.
+    const ISOSsplit = ISOSformat.split("T"); // OUTPUT: [ '2005-02-01', '03:00:00.000Z' ] - Convertimos a ISOSformat en un arreglo con la fecha y el horario.
+    const getBirthday = ISOSsplit[0].split("-").reverse().join("/"); // Agarramos el primer elemento de ISOSsplit, invertimos el formato de fecha de YYYY-MM-DD a DD/MM/YYYY
+
     return {
       ...this._info,
-      birthday: this._info.birthday.toLocaleString().split(",").join(""),
+      birthday: getBirthday,
     };
   }
 
+  public get lastSession(): string {
+    const ls: Date = this._lastSession; // OUTPUT: 2005-02-01T03:00:00.000Z como Date
+
+    const ISOSformat = ls.toISOString();
+    const ISOSsplit = ISOSformat.split("T");
+    const getDate = ISOSsplit[0].split("-").reverse().join("/");
+    const hour = ls.getHours().toString().padStart(2, "0");
+    const minutes = ls.getMinutes().toString().padStart(2, "0");
+    const seconds = ls.getSeconds().toString().padStart(2, "0");
+
+    return `${getDate} ${hour}:${minutes}:${seconds}`;
+  }
+
   public get createdAt(): string {
-    return this._createdAt.toLocaleString().split(",").join("");
+    const cat: Date = this._createdAt; // OUTPUT: 2005-02-01T03:00:00.000Z como Date
+
+    const ISOSformat = cat.toISOString();
+    const ISOSsplit = ISOSformat.split("T");
+    const getDate = ISOSsplit[0].split("-").reverse().join("/");
+    const hour = cat.getHours().toString().padStart(2, "0");
+    const minutes = cat.getMinutes().toString().padStart(2, "0");
+    const seconds = cat.getSeconds().toString().padStart(2, "0");
+    console.log(hour, minutes, seconds);
+
+    return `${getDate} ${hour}:${minutes}:${seconds}`;
   }
 }
 
@@ -90,42 +121,45 @@ export class UserReposity {
   private static connection = createPool({ ...option });
 
   //REGISTER
-  static async getUserByUsername(username: string):Promise<{status:'exist'} | {status:'success'}> {
+  static async getUserByUsername(
+    username: string,
+  ): Promise<{ status: "exist" } | { status: "success" }> {
     try {
       const [res] = await this.connection.execute<RowDataPacket[]>(
         `SELECT user.username FROM user WHERE user.username = ?`,
         [username],
       );
-      if (res.length !== 0){
+      if (res.length !== 0) {
         return {
-          status: 'exist',
+          status: "exist",
         };
       }
 
       return {
-        status:'success'
-      }
-
+        status: "success",
+      };
     } catch (error) {
       throw (error as Error).message;
     }
   }
 
-  static async getUserByEmail(email: string):Promise<{status:'exist'} | {status:'success'}>  {
+  static async getUserByEmail(
+    email: string,
+  ): Promise<{ status: "exist" } | { status: "success" }> {
     try {
       const [res] = await this.connection.execute<RowDataPacket[]>(
         `SELECT info.email FROM info WHERE info.email = ?`,
         [email],
       );
-      if (res.length !== 0){
+      if (res.length !== 0) {
         return {
-          status: 'exist'
+          status: "exist",
         };
       }
 
       return {
-        status:'success'
-      }
+        status: "success",
+      };
     } catch (error) {
       throw (error as Error).message;
     }
@@ -159,14 +193,18 @@ export class UserReposity {
   }
 
   //LOGIN
-  static async getPayload(_user: userLogin): Promise<{status:'notexist'} |{status:'notmatched' } | {status:'success', payload:{id:string}}>{
+  static async getPayload(_user: userLogin): Promise<
+    | { status: "notexist" }
+    | { status: "notmatched" }
+    | { status: "success"; payload: { id: string } }
+  > {
     try {
       const [res] = await this.connection.execute<RowDataPacket[]>(
         "SELECT user.id, user.password FROM user WHERE user.username = ?",
         [_user.username],
       );
-      if(res.length === 0) return {status:'notexist'}
-      
+      if (res.length === 0) return { status: "notexist" };
+
       const user: { id: string; password: string } = {
         id: res[0].id,
         password: res[0].password,
@@ -174,10 +212,10 @@ export class UserReposity {
 
       const match = await bcrypt.compare(_user.password, user.password);
 
-      if (!match) return { status:'notmatched' };
+      if (!match) return { status: "notmatched" };
 
       return {
-        status: 'success',
+        status: "success",
         payload: { id: user.id },
       };
     } catch (error) {
@@ -194,10 +232,10 @@ export class UserReposity {
       ON user.info_id = info.id
       WHERE user.id = ?`;
       const [res] = await this.connection.execute<RowDataPacket[]>(SQL, [_id]);
-      const { id, username, createdAt, verificated, info }: userAuth = new User(
+      const { id, username, createdAt, verificated, info, lastSession }: userAuth = new User(
         res[0] as userData,
       );
-      return { id, username, createdAt, verificated, info };
+      return { id, username, createdAt, verificated, info, lastSession };
     } catch (error) {
       throw (error as Error).message;
     }
