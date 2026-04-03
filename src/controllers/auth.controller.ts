@@ -63,7 +63,7 @@ export const login = async (req: Request, res: Response) => {
         .json({ status: 404, message: "Contraseña Incorrecta" });
 
     const { payload } = getPayload;
-    const token = signToken(payload!);
+    const token = signToken(payload);
     return res
       .status(200)
       .cookie("access_token", token, {
