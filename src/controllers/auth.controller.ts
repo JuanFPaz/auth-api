@@ -1,100 +1,45 @@
 import { Request, Response } from "express";
-import { signToken } from "../utils/jwt";
-import {
-  userLogin,
-  userRegister,
-  UserReposity,
-  type userData,
-} from "../models/user.model";
-import { handleError } from "../utils/errorHandler";
-
-//Check
-export const check = async (req:Request, res:Response) => {
-  try {
-    const check = await UserReposity.checkConnection();
-    return res.json({...check})
-  } catch (error) {
-    handleError(error, res, "Check");
-  }
-};
-
+import type { UserRegister, UserLogin} from "../types/user.types";
+import AuthService from "../service/auth.service";
 //Register
 export const register = async (req: Request, res: Response) => {
-  const user: userRegister = req.body;
+  const user: UserRegister = req.body;
   try {
-    const existUser = await UserReposity.getUserByUsername(user.username);
-    if (existUser.status === "exist")
-      return res
-        .status(409)
-        .json({
-          status: 409,
-          message: "Este nombre de usuario ya esta registrado",
-        });
-
-    const existMail = await UserReposity.getUserByEmail(user.info.email);
-    if (existMail.status === "exist")
-      return res
-        .status(409)
-        .json({ status: 409, message: "Este email ya esta registrado" });
-
-    await UserReposity.createUser(user);
-    res.status(201).json({
-      status: 201,
-      message: "Usuario registrado con exito.",
-    });
+    await AuthService.register(user);
+    res
+      .status(201)
+      .json({ status: 201, message: "Usuario registrado correctamente" });
   } catch (err) {
-    handleError(err, res, "Register");
+    // Esto tambien hay que arreglarlo y personalizarlo
+    res.status(500).json({ status: 500, message: (err as Error).message });
   }
 };
 
 //Login
 export const login = async (req: Request, res: Response) => {
-  const user: userLogin = req.body;
-
+  const user: UserLogin = req.body;
   try {
-    const getPayload = await UserReposity.getPayload(user);
-    if (getPayload.status === "notexist")
-      return res
-        .status(404)
-        .json({ status: 404, message: "Usuario Incorrecto" });
-    if (getPayload.status === "notmatched")
-      return res
-        .status(404)
-        .json({ status: 404, message: "Contraseña Incorrecta" });
+    const payload = await AuthService.login(user);
+    const { accessToken } = await AuthService.token(payload);
 
-    const { payload } = getPayload;
-    const token = signToken(payload);
-    return res
-      .status(200)
-      .cookie("access_token", token, {
-        httpOnly: true,
-        secure: true, //TRUE EN PRODUCCION
-        sameSite: "none", //NONE EN PRODUCCION
-        maxAge: 1000 * 60 * 60,
-      })
-      .json({ status: 200, message: "Usuario ingresado con exito." });
+    res.status(201).json({ status: 201, message: "Credenciales Validas", accessToken });
   } catch (err) {
-    handleError(err, res, "Login");
+    res.status(500).json({ status: 500, message: (err as Error).message });
   }
 };
 
-export const logout = async (req: Request, res: Response) => {
-  res
-    .status(200)
-    .clearCookie("access_token")
-    .json({ status: 200, message: "Usuario desconectado correctamente" });
-};
+// export const logout = async (req: Request, res: Response) => {
+//   res
+//     .status(200)
+//     .clearCookie("access_token")
+//     .json({ status: 200, message: "Usuario desconectado correctamente" });
+// };
 
-export const user = async (req: Request, res: Response) => {
-  const { id }: userData = (req as any).user;
+export const profile = async (req: Request, res: Response) => {
   try {
-    const user = await UserReposity.getUserById(id);
-    if (!user)
-      return res
-        .status(500)
-        .json({ status: 500, message: "Error, usuario esta vacio?" });
-    res.status(202).json({ message: "Usuario Autorizado", ...user });
+    const data = await AuthService.profile((req as any).user);
+    res.status(202).json({ status: 202, message: "Usuario Autenticado", data });
   } catch (error) {
-    handleError(error, res, "user");
+    res.status(401).json({ status: 401, message: (error as Error).message });
   }
 };
