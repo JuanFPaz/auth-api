@@ -19,7 +19,6 @@ export type UserPayload = {
   email: string;
 };
 
-// eL TIPO QUE 
 export type UserConstructor = {
   id: string;
   username: string;

@@ -56,7 +56,7 @@ export default class AuthService {
   }
 
   static async token(payload: UserPayload, ip: string, userAgent: string) {
-    const accessToken = signToken(payload);
+    const access_token = signToken(payload);
     const jti = createJti();
     const refreshToken = signRefreshToken(payload, jti);
     const data = persistRefreshToken({
@@ -69,7 +69,7 @@ export default class AuthService {
     await UserReposity.createRefreshToken(data);
     const REFRESH_TTL_SEC = getRefreshTTLSEC();
     return {
-      accessToken,
+      access_token,
       refreshToken,
       REFRESH_TTL_SEC,
     };
