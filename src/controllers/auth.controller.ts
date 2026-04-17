@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import type { UserRegister, UserLogin} from "../types/user.types";
+import type { UserRegister, UserLogin, UserPayload } from "../types/user.types";
 import AuthService from "../service/auth.service";
 //Register
 export const register = async (req: Request, res: Response) => {
@@ -17,27 +17,73 @@ export const register = async (req: Request, res: Response) => {
 
 //Login
 export const login = async (req: Request, res: Response) => {
-  const user: UserLogin = req.body;
+  const ip = req.ip!;
+  const userAgent = req.headers["user-agent"] || "";
   try {
-    const payload = await AuthService.login(user);
-    const { accessToken } = await AuthService.token(payload);
-
-    res.status(201).json({ status: 201, message: "Credenciales Validas", accessToken });
+    const payload = await AuthService.login(req.body);
+    const { accessToken, refreshToken, REFRESH_TTL_SEC } =
+      await AuthService.token(payload, ip, userAgent);
+    res
+      .status(201)
+      .cookie("refresh_token", refreshToken, {
+        httpOnly: true,
+        secure: false, // TRUE PARA PRODUCCION
+        sameSite: "strict",
+        maxAge: REFRESH_TTL_SEC * 1000,
+      })
+      .json({ status: 201, message: "Credenciales Validas", accessToken });
   } catch (err) {
     res.status(500).json({ status: 500, message: (err as Error).message });
   }
 };
 
-// export const logout = async (req: Request, res: Response) => {
-//   res
-//     .status(200)
-//     .clearCookie("access_token")
-//     .json({ status: 200, message: "Usuario desconectado correctamente" });
-// };
+export const refresh = async (req: Request, res: Response) => {
+  const token = (req as any).refreshUser.token;
+  const jti = (req as any).refreshUser.jti;
+  const ip = req.ip!;
+  const userAgent = req.headers["user-agent"] || "";
+  try {
+    const { newAccessToken, newRefresh, REFRESH_TTL_SEC } =
+      await AuthService.rotationToken(token, jti, ip, userAgent);
+    res
+      .status(201)
+      .cookie("refresh_token", newRefresh, {
+        httpOnly: true,
+        secure: false, // TRUE PARA PRODUCCION
+        sameSite: "strict",
+        path: "/api/auth",
+        maxAge: REFRESH_TTL_SEC * 1000,
+      })
+      .json({
+        status: 201,
+        message: "Credenciales Validas",
+        accessToken: newAccessToken,
+      });
+  } catch (error) {
+    res.status(401).json({ status: 401, message: (error as Error).message });
+  }
+};
+
+export const logout = async (req: Request, res: Response) => {
+  const token = req.cookies?.refresh_token;
+
+  try {
+    if (token) {
+      await AuthService.revokeToken(token);
+    }
+
+    res
+      .clearCookie("refresh_token", { path: "/api/auth" })
+      .json({ message: "Logged Out" });
+  } catch (error) {
+    res.status(500).json({ message: (error as Error).message });
+  }
+};
 
 export const profile = async (req: Request, res: Response) => {
+  const userPayload: UserPayload = (req as any).user;
   try {
-    const data = await AuthService.profile((req as any).user);
+    const data = await AuthService.profile(userPayload);
     res.status(202).json({ status: 202, message: "Usuario Autenticado", data });
   } catch (error) {
     res.status(401).json({ status: 401, message: (error as Error).message });
