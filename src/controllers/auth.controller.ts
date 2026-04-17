@@ -1,100 +1,94 @@
 import { Request, Response } from "express";
-import { signToken } from "../utils/jwt";
-import {
-  userLogin,
-  userRegister,
-  UserReposity,
-  type userData,
-} from "../models/user.model";
-import { handleError } from "../utils/errorHandler";
-
-//Check
-export const check = async (req:Request, res:Response) => {
-  try {
-    const check = await UserReposity.checkConnection();
-    return res.json({...check})
-  } catch (error) {
-    handleError(error, res, "Check");
-  }
-};
-
+import type { UserRegister, UserLogin, UserPayload, UserResponse } from "../types/user.types";
+import AuthService from "../service/auth.service";
 //Register
 export const register = async (req: Request, res: Response) => {
-  const user: userRegister = req.body;
+  const user: UserRegister = req.body;
   try {
-    const existUser = await UserReposity.getUserByUsername(user.username);
-    if (existUser.status === "exist")
-      return res
-        .status(409)
-        .json({
-          status: 409,
-          message: "Este nombre de usuario ya esta registrado",
-        });
-
-    const existMail = await UserReposity.getUserByEmail(user.info.email);
-    if (existMail.status === "exist")
-      return res
-        .status(409)
-        .json({ status: 409, message: "Este email ya esta registrado" });
-
-    await UserReposity.createUser(user);
-    res.status(201).json({
-      status: 201,
-      message: "Usuario registrado con exito.",
-    });
+    await AuthService.register(user);
+    res
+      .status(201)
+      .json({ status: 201, message: "Usuario registrado correctamente" });
   } catch (err) {
-    handleError(err, res, "Register");
+    // Esto tambien hay que arreglarlo y personalizarlo
+    res.status(500).json({ status: 500, message: (err as Error).message });
   }
 };
 
 //Login
 export const login = async (req: Request, res: Response) => {
-  const user: userLogin = req.body;
-
+  const user: UserLogin = req.body
+  const ip = req.ip!;
+  const userAgent = req.headers["user-agent"] || "";
   try {
-    const getPayload = await UserReposity.getPayload(user);
-    if (getPayload.status === "notexist")
-      return res
-        .status(404)
-        .json({ status: 404, message: "Usuario Incorrecto" });
-    if (getPayload.status === "notmatched")
-      return res
-        .status(404)
-        .json({ status: 404, message: "Contraseña Incorrecta" });
-
-    const { payload } = getPayload;
-    const token = signToken(payload!);
-    return res
-      .status(200)
-      .cookie("access_token", token, {
+    const payload = await AuthService.login(user);
+    const { access_token, refreshToken, REFRESH_TTL_SEC } =
+      await AuthService.token(payload, ip, userAgent);
+    res
+      .status(201)
+      .cookie("refresh_token", refreshToken, {
         httpOnly: true,
-        secure: true, //TRUE EN PRODUCCION
-        sameSite: "none", //NONE EN PRODUCCION
-        maxAge: 1000 * 60 * 60,
+        secure: false, // TRUE PARA PRODUCCION
+        sameSite: "strict",
+        path: "/api/auth" ,
+        maxAge: REFRESH_TTL_SEC * 1000,
       })
-      .json({ status: 200, message: "Usuario ingresado con exito." });
+      .json({ status: 201, message: "Credenciales Validas", access_token });
   } catch (err) {
-    handleError(err, res, "Login");
+    res.status(500).json({ status: 500, message: (err as Error).message });
+  }
+};
+
+export const refresh = async (req: Request, res: Response) => {
+  const token = (req as any).refreshUser.token;
+  const jti = (req as any).refreshUser.jti;
+  const ip = req.ip!;
+  const userAgent = req.headers["user-agent"] || "";
+    
+  try {
+    const { newAccessToken, newRefresh, REFRESH_TTL_SEC } =
+      await AuthService.rotationToken(token, jti, ip, userAgent);
+      
+    res
+      .status(201)
+      .cookie("refresh_token", newRefresh, {
+        httpOnly: true,
+        secure: false, // TRUE PARA PRODUCCION
+        sameSite: "strict",
+        path: "/api/auth",
+        maxAge: REFRESH_TTL_SEC * 1000,
+      })
+      .json({
+        status: 201,
+        message: "Credenciales Validas",
+        access_token: newAccessToken,
+      });
+  } catch (error) {
+    res.status(401).json({ status: 401, message: (error as Error).message });
   }
 };
 
 export const logout = async (req: Request, res: Response) => {
-  res
-    .status(200)
-    .clearCookie("access_token")
-    .json({ status: 200, message: "Usuario desconectado correctamente" });
+  const token = req.cookies?.refresh_token;
+    try {
+    if (token) {
+      await AuthService.revokeToken(token);
+    }
+
+    res
+      .clearCookie("refresh_token", { path: "/api/auth" })
+      .json({ status:202, message: "Logged Out" });
+  } catch (error) {
+    res.status(500).json({ message: (error as Error).message });
+  }
 };
 
-export const user = async (req: Request, res: Response) => {
-  const { id }: userData = (req as any).user;
+export const profile = async (req: Request, res: Response) => {
+  const userPayload: UserPayload = (req as any).user;
   try {
-    const user = await UserReposity.getUserById(id);
-    if (!user)
-      return res
-        .status(500)
-        .json({ status: 500, message: "Error, usuario esta vacio?" });
-    res.status(202).json({ message: "Usuario Autorizado", ...user });
+    const data:UserResponse = await AuthService.profile(userPayload);
+    res.status(202).json({ status: 202, message: "Usuario Autenticado", data });
   } catch (error) {
-    handleError(error, res, "user");
+    res.status(401).json({ status: 401, message: (error as Error).message });
   }
 };

@@ -1,18 +1,17 @@
 {
   "compilerOptions": {
-    "target": "es2020",
-    "module": "commonjs",
-    "rootDir": "./src",
-    "outDir": "./build",
-    "moduleResolution": "node10",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
+    "target": "ES2022",                /* Versión moderna de JS */
+    "module": "CommonJS",              /* Recomendado para Node.js */
+    "lib": ["ES2022"],                 /* Bibliotecas soportadas */
+    "allowJs": true,                   /* Permite JS en el proyecto */
+    "checkJs": true,                   /* Informa errores en JS */
+    "outDir": "./dist",                /* Carpeta compilada */
+    "rootDir": "./src",                /* Carpeta de código fuente */
+    "strict": true,                    /* Activación de todos los chequeos */
+    "esModuleInterop": true,           /* Compatibilidad con CommonJS */
+    "skipLibCheck": true,              /* Omite comprobación de tipos de librerías */
+    "forceConsistentCasingInFileNames": true
   },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["src/**/*"],             /* Archivos a compilar */
+  "exclude": ["node_modules"]          /* Archivos a ignorar */
 }

@@ -1,20 +1,55 @@
 // src/middleware/auth.middleware.ts
-import { Request, Response, NextFunction } from 'express';
-import { verifyToken } from '../utils/jwt';
+import { Request, Response, NextFunction } from "express";
+import { verifyToken,verifyRefreshToken } from "../utils/jwt";
 
-//Middleware protect.auth
-export const protect = (req: Request, res: Response, next: NextFunction) => {
-    const token = req.cookies.access_token
+export const authProfile = (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization || "";
+  const [scheme, token] = authHeader.split(" ");
 
-    if(!token) return res.status(401).json({ status:401, message: 'Missing or invalid Authorization header' });
+  if (scheme !== "Bearer" || !token) {
+    return res
+      .status(401)
+      .json({ message: "Missing or invalid Authorization header" });
+  }
 
-    try {
-        const decoded = verifyToken(token);
-        
-        (req as any).user = { id: decoded.id }
-        next();
-    } catch (err) {
-        res.status(401).json({ status:401, message: 'Invalid or expired token' });
-        return;
-    }
+  if (!token)
+    return res.status(401).json({
+      status: 401,
+      message: "Missing or invalid Authorization header",
+    });
+
+  try {
+    const decoded = verifyToken(token);
+
+    (req as any).user = {
+      id: decoded.id,
+      username: decoded.username,
+      email: decoded.email,
+    };
+    next();
+  } catch (err) {
+    res.status(401).json({ status: 401, message: "Invalid or expired token" });
+    return;
+  }
+};
+
+
+export const authRefresh = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const token = req.cookies?.refresh_token;
+
+  if (!token) return res.status(401).json({ message: "No refresh token" });
+
+  try {
+    const decoded = verifyRefreshToken(token);
+    (req as any).refreshUser = { jti: decoded.jti, token };
+    next();
+  } catch (err) {
+    return res
+      .status(401)
+      .json({ message: "Invalid or expired refresh token" });
+  }
 };

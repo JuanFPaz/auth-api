@@ -1,26 +1,23 @@
-import express, { Request, Response, NextFunction } from 'express';
-import { register, login,  user, logout, check } from '../controllers/auth.controller';
-import { protect } from '../middleware/auth.middleware';
+import express from "express";
+import {
+  register,
+  login,
+  profile,
+  refresh,
+  logout,
+} from "../controllers/auth.controller";
+import { authProfile, authRefresh } from "../middleware/auth.middleware";
 
 const router = express.Router();
 
-router.get('/',(req,res,next)=>{
-    check(req,res).catch(next)
-})
+router.post("/register", register);
 
-router.post('/register', (req: Request, res: Response, next: NextFunction) => {
-    register(req, res).catch(next);
-});
-router.post('/login', (req: Request, res: Response, next: NextFunction) => {
-    login(req, res).catch(next);
-});
+router.post("/login", login);
 
-router.get('/me', protect, (req:Request, res:Response) => {
-    user(req,res)
-});
+router.get("/profile", authProfile, profile);
 
-router.post('/logout', protect,(req:Request,res:Response)=>{
-    logout(req,res)
-})
+router.post("/refresh", authRefresh, refresh);
+
+router.post('/logout', logout)
 
 export default router;
