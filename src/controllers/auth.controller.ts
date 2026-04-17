@@ -29,7 +29,7 @@ export const login = async (req: Request, res: Response) => {
       .cookie("refresh_token", refreshToken, {
         httpOnly: true,
         secure: true, // TRUE PARA PRODUCCION
-        sameSite: "lax",
+        sameSite: "none",
         path: "/api/auth" ,
         maxAge: REFRESH_TTL_SEC * 1000,
       })
@@ -54,7 +54,7 @@ export const refresh = async (req: Request, res: Response) => {
       .cookie("refresh_token", newRefresh, {
         httpOnly: true,
         secure: true, // TRUE PARA PRODUCCION
-        sameSite: "lax",
+        sameSite: "none",
         path: "/api/auth",
         maxAge: REFRESH_TTL_SEC * 1000,
       })
