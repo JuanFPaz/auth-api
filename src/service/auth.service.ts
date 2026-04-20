@@ -40,9 +40,10 @@ export default class AuthService {
   }
 
   static async login(user: UserLogin): Promise<UserPayload> {
-    const _user = await UserReposity.getUser(user);
+    const _user = await UserReposity.getUser(user.username);
 
     if (!_user[0]) throw new Error("Usuario Incorrecto");
+    console.log(user);
 
     const matched = await bcrypt.compare(user.password, _user[0].password);
 
@@ -83,6 +84,7 @@ export default class AuthService {
   ) {
     const tokenHash = hashToken(token);
     const doc = await UserReposity.getRefreshToken({ tokenHash, jti });
+
     if (!doc[0]) throw new Error("No refresh Token");
     if (doc[0].revoked_at) throw new Error("Refresh Token not recognized");
     if (doc[0].expires_at < new Date())
@@ -140,5 +142,37 @@ export default class AuthService {
     const _user = await UserReposity.getUserById(user);
     const userResponse = new User(_user[0] as UserConstructor);
     return userResponse.toObject();
+  }
+
+  static async editPassword(
+    user: UserPayload,
+    userPass: { currentPass: string; newPassword: string },
+  ) {
+    const _user = await UserReposity.getUser(user.username);
+
+    if (!_user[0]) throw new Error("No se encontro el usuario registrado.");
+
+    const matched = await bcrypt.compare(
+      userPass.currentPass,
+      _user[0].password,
+    );
+
+    if (!matched) throw new Error("Contraseña actual incorrecta");
+
+    const matchedNewPass = await bcrypt.compare(
+      userPass.newPassword,
+      _user[0].password,
+    );
+
+    if (matchedNewPass) throw new Error("Nueva Contraseña debe ser distinta a la contraseña actual");
+
+    const hashedPassword = await bcrypt.hash(userPass.newPassword, 10);
+
+    await UserReposity.editPassword({
+      id: user.id,
+      newPassword: hashedPassword,
+    });
+
+    await UserReposity.revokeAllByUserId(user.id)
   }
 }
