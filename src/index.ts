@@ -15,6 +15,9 @@ app.use(
   }),
 );
 
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(cookieParser());
 
 app.get("/", async (req: Request, res: Response) => {
   try {
@@ -25,9 +28,6 @@ app.get("/", async (req: Request, res: Response) => {
   }
 });
 
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 
 app.listen(PORT, () => {
