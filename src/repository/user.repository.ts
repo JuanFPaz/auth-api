@@ -43,7 +43,28 @@ export class UserReposity {
     }
   }
 
-  static async getUser({ username }: UserLogin) {
+  static async editPassword({
+    id,
+    newPassword,
+  }: {
+    id: number;
+    newPassword: string;
+  }) {
+    try {
+      const [res] = await this.pool.execute<RowDataPacket[]>(
+        `
+        UPDATE users
+        SET password = ?
+        WHERE users.id = ?
+        `,
+        [newPassword,id],
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async getUser(username: string) {
     try {
       const [res] = await this.pool.execute<RowDataPacket[]>(
         "SELECT * FROM users WHERE users.username = ?",
@@ -68,6 +89,7 @@ export class UserReposity {
       throw error;
     }
   }
+
   static async createRefreshToken(refresh: RefreshTokenRecord) {
     try {
       const [userResult] = await this.pool.execute(
@@ -146,6 +168,21 @@ export class UserReposity {
         WHERE refresh_tokens.token_hash = ? AND refresh_tokens.jti = ?
         `,
         [refresh.revokedAt, refresh.tokenHash, refresh.jti],
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async revokeAllByUserId(id:number){
+   try {
+      const [res] = await this.pool.execute<RowDataPacket[]>(
+        `
+        UPDATE refresh_tokens
+        SET revoked_at = NOW()
+        WHERE refresh_tokens.user_id = ? AND refresh_tokens.revoked_at IS NULL
+        `,
+        [id],
       );
     } catch (error) {
       throw error;
