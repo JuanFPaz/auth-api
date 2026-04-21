@@ -8,6 +8,15 @@ export type UserRegister = {
   country: string;
 };
 
+export type UserEdit = {
+  currentPass: string,
+  newPass:string
+}
+
+export type UserDelete = {
+  password: string
+}
+
 export type UserLogin = {
   username: string;
   password: string;
