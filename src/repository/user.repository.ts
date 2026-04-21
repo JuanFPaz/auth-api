@@ -43,13 +43,17 @@ export class UserReposity {
     }
   }
 
-  static async editPassword({
-    id,
-    newPassword,
-  }: {
-    id: number;
-    newPassword: string;
-  }) {
+  static async deleteUser(id: number) {
+    try {
+      const [res] = await this.pool.execute(`DELETE FROM users WHERE id = ?`, [
+        id,
+      ]);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async editUser(id: number, newPassword: string) {
     try {
       const [res] = await this.pool.execute<RowDataPacket[]>(
         `
@@ -57,7 +61,7 @@ export class UserReposity {
         SET password = ?
         WHERE users.id = ?
         `,
-        [newPassword,id],
+        [newPassword, id],
       );
     } catch (error) {
       throw error;
@@ -77,10 +81,10 @@ export class UserReposity {
     }
   }
 
-  static async getUserById({ id }: UserPayload) {
+  static async getUserById(id: number) {
     try {
       const [res] = await this.pool.execute<RowDataPacket[]>(
-        "SELECT users.id, users.username, users.email, users.createdAt, users.name, users.lastname, users.birthday, users.country FROM users WHERE users.id = ?",
+        "SELECT * FROM users WHERE users.id = ?",
         [id],
       );
 
@@ -90,26 +94,26 @@ export class UserReposity {
     }
   }
 
-  static async createRefreshToken(refresh: RefreshTokenRecord) {
+  static async createRefreshToken({
+    userId,
+    tokenHash,
+    jti,
+    expiresAt,
+    ip,
+    userAgent,
+  }: RefreshTokenRecord) {
     try {
       const [userResult] = await this.pool.execute(
         `INSERT INTO refresh_tokens(user_id, token_hash, jti,expires_at,ip,user_agent)
        VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          refresh.userId,
-          refresh.tokenHash,
-          refresh.jti,
-          refresh.expiresAt,
-          refresh.ip,
-          refresh.userAgent,
-        ],
+        [userId, tokenHash, jti, expiresAt, ip, userAgent],
       );
     } catch (error) {
       throw error;
     }
   }
 
-  static async getRefreshToken(refresh: RefreshTokenBase) {
+  static async getRefreshToken({ tokenHash, jti }: RefreshTokenBase) {
     try {
       const [res] = await this.pool.execute<RowDataPacket[]>(
         `
@@ -119,7 +123,7 @@ export class UserReposity {
         ON refresh_tokens.user_id = users.id
         WHERE refresh_tokens.token_hash = ? AND refresh_tokens.jti = ?
         `,
-        [refresh.tokenHash, refresh.jti],
+        [tokenHash, jti],
       );
 
       return res;
@@ -144,7 +148,12 @@ export class UserReposity {
     }
   }
 
-  static async rotationRefreshToken(refresh: RefreshRotation) {
+  static async rotationRefreshToken({
+    revokedAt,
+    replacedBy,
+    tokenHash,
+    jti,
+  }: RefreshRotation) {
     try {
       const [res] = await this.pool.execute<RowDataPacket[]>(
         `
@@ -152,14 +161,18 @@ export class UserReposity {
         SET revoked_at = ? , replaced_by = ?
         WHERE refresh_tokens.token_hash = ? AND refresh_tokens.jti = ?
         `,
-        [refresh.revokedAt, refresh.replacedBy, refresh.tokenHash, refresh.jti],
+        [revokedAt, replacedBy, tokenHash, jti],
       );
     } catch (error) {
       throw error;
     }
   }
 
-  static async revokeRefreshToken(refresh: RefreshRevoke) {
+  static async revokeRefreshToken({
+    revokedAt,
+    tokenHash,
+    jti,
+  }: RefreshRevoke) {
     try {
       const [res] = await this.pool.execute<RowDataPacket[]>(
         `
@@ -167,15 +180,15 @@ export class UserReposity {
         SET revoked_at = ?
         WHERE refresh_tokens.token_hash = ? AND refresh_tokens.jti = ?
         `,
-        [refresh.revokedAt, refresh.tokenHash, refresh.jti],
+        [revokedAt, tokenHash, jti],
       );
     } catch (error) {
       throw error;
     }
   }
 
-  static async revokeAllByUserId(id:number){
-   try {
+  static async revokeAllByUserId(id: number) {
+    try {
       const [res] = await this.pool.execute<RowDataPacket[]>(
         `
         UPDATE refresh_tokens
