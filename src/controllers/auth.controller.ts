@@ -4,8 +4,11 @@ import type {
   UserLogin,
   UserPayload,
   UserResponse,
+  UserEdit,
+  UserDelete,
 } from "../types/user.types";
 import AuthService from "../service/auth.service";
+
 //Register
 export const register = async (req: Request, res: Response) => {
   const user: UserRegister = req.body;
@@ -22,6 +25,9 @@ export const register = async (req: Request, res: Response) => {
 
 //Login
 export const login = async (req: Request, res: Response) => {
+  console.log('Login');
+  console.log('---------');
+  
   const user: UserLogin = req.body;
   const ip = req.ip!;
   const userAgent = req.headers["user-agent"] || "";
@@ -29,6 +35,9 @@ export const login = async (req: Request, res: Response) => {
     const payload = await AuthService.login(user);
     const { access_token, refreshToken, REFRESH_TTL_SEC } =
       await AuthService.token(payload, ip, userAgent);
+
+    console.log('Refresh: '+refreshToken);
+    console.log('---------');
     res
       .status(201)
       .cookie("refresh_token", refreshToken, {
@@ -44,16 +53,22 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
+//Refresh
 export const refresh = async (req: Request, res: Response) => {
   const token = (req as any).refreshUser.token;
   const jti = (req as any).refreshUser.jti;
   const ip = req.ip!;
   const userAgent = req.headers["user-agent"] || "";
-
+  console.log('Refresh');
+  console.log('---------');
+  console.log('Cookie: '+token);
+  
   try {
     const { newAccessToken, newRefresh, REFRESH_TTL_SEC } =
       await AuthService.rotationToken(token, jti, ip, userAgent);
 
+    console.log('New Refresh: '+newRefresh);
+    console.log('---------');
     res
       .status(201)
       .cookie("refresh_token", newRefresh, {
@@ -73,6 +88,7 @@ export const refresh = async (req: Request, res: Response) => {
   }
 };
 
+//Logout
 export const logout = async (req: Request, res: Response) => {
   const token = req.cookies?.refresh_token;
   try {
@@ -88,6 +104,7 @@ export const logout = async (req: Request, res: Response) => {
   }
 };
 
+//profile
 export const profile = async (req: Request, res: Response) => {
   const userPayload: UserPayload = (req as any).user;
   try {
@@ -98,12 +115,16 @@ export const profile = async (req: Request, res: Response) => {
   }
 };
 
+//Edit Profile
 export const editProfile = async (req: Request, res: Response) => {
   const payload: UserPayload = (req as any).user;
+  const userEdit: UserEdit = req.body
+  console.log(userEdit);
+  
   const ip = req.ip!;
   const userAgent = req.headers["user-agent"] || "";
   try {
-    await AuthService.editPassword(payload, req.body);
+    await AuthService.editPassword(payload, userEdit);
     const { access_token, refreshToken, REFRESH_TTL_SEC } = await AuthService.token(payload, ip, userAgent);
    
     res
@@ -121,6 +142,23 @@ export const editProfile = async (req: Request, res: Response) => {
         access_token,
       });
   } catch (error) {
+    console.error(error)
     res.status(401).json({ status: 401, message: (error as Error).message });
   }
 };
+
+//Delete Profile
+
+export const deleteProfile = async (req:Request, res:Response) =>{
+  const payload: UserPayload = (req as any).user; 
+  const userDelete: UserDelete = req.body 
+  try {
+    await AuthService.deleteProfile(payload, userDelete);
+
+    res
+      .clearCookie("refresh_token", { path: "/api/auth" })
+      .json({ status: 200, message: "Usuario eliminado correctamente, adios :)" });
+  } catch (error) {
+    res.status(500).json({ message: (error as Error).message });
+  }
+}

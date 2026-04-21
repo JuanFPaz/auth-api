@@ -6,6 +6,7 @@ import {
   profile,
   editProfile,
   refresh,
+  deleteProfile,
 } from "../controllers/auth.controller";
 import { authProfile, authRefresh } from "../middleware/auth.middleware";
 
@@ -22,7 +23,7 @@ router.post('/password/reset', ()=>{})//Ruta para cuando el usuario olvida la co
 // Rutas del perfil autenticado
 router.get("/profile", authProfile, profile);
 
-router.delete("/profile", authProfile, ()=>{})// Ruta para cuando el usuario quiere borrar su cuenta, aca verificamos el access_token y si todo ta bien ,eliminamos al usuario :3
+router.delete("/profile", authProfile, deleteProfile)// Ruta para cuando el usuario quiere borrar su cuenta, aca verificamos el access_token y si todo ta bien ,eliminamos al usuario :3
 
 router.patch("/profile/password", authProfile, editProfile)// Ruta para cuando el usuario esta en el panel de su usuario, y nos envia la contraseña nueva. aca verificamos los accesstoken y los datos ingresados, como que coincidan las contraseñas etc.
 
