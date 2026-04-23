@@ -26,6 +26,7 @@ export type UserPayload = {
   id: number;
   username: string;
   email: string;
+  iat?:number
 };
 
 export type UserConstructor = {
