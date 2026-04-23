@@ -10,7 +10,7 @@ const PORT = process.env.PORT ?? 3000;
 app.use(
   cors({
     origin:['http://localhost:5173','https://juanfpaz.github.io'],
-    methods:['GET','POST'],
+    methods:['GET','POST','DELETE','PATCH'],
     credentials:true
   }),
 );
