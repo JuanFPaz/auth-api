@@ -32,9 +32,7 @@ export const authProfile = async (req: Request, res: Response, next: NextFunctio
       email: decoded.email,
     };
     next();
-  } catch (err) {
-    console.log(err);
-    
+  } catch (err) {    
     res.status(401).json({ status: 401, message: 'Invalid or expired refresh token' });
     return;
   }

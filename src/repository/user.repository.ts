@@ -81,6 +81,19 @@ export class UserReposity {
     }
   }
 
+  static async getUserByNameAndEmail(username: string, email: string) {
+    try {
+      const [res] = await this.pool.execute<RowDataPacket[]>(
+        "SELECT * FROM users WHERE users.username = ? AND users.email = ?",
+        [username, email],
+      );
+
+      return res;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   static async getUserById(id: number) {
     try {
       const [res] = await this.pool.execute<RowDataPacket[]>(

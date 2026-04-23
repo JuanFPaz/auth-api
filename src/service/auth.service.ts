@@ -144,22 +144,51 @@ export default class AuthService {
     return userResponse.toObject();
   }
 
-  static async validateAccessToken(payload: UserPayload){
-    const _user = await UserReposity.getUserById(payload.id) 
+  static async validateAccessToken(payload: UserPayload) {
+    const _user = await UserReposity.getUserById(payload.id);
 
-    if(!_user[0]) throw new Error('Token inválido - No se encontro el usuario')
+    if (!_user[0])
+      throw new Error("Token inválido - No se encontro el usuario");
 
-    if(_user[0].password_changed_at){
-      const passwordChangedAt = new Date(_user[0].password_changed_at).getTime()
-      const tokenIssuedAt = payload.iat! * 1000
+    if (_user[0].password_changed_at) {
+      const passwordChangedAt = new Date(
+        _user[0].password_changed_at,
+      ).getTime();
+      const tokenIssuedAt = payload.iat! * 1000;
 
-      console.log('PCA: '+passwordChangedAt);
-      console.log('IAT: '+ tokenIssuedAt);
-      
-      if(tokenIssuedAt < passwordChangedAt){
-        throw new Error('Token inválido')
+      if (tokenIssuedAt < passwordChangedAt) {
+        throw new Error("Token inválido");
       }
     }
+  }
+
+  static async resetPassword(user: {
+    username: string;
+    email: string;
+    password: string;
+  }) {
+    const _user = await UserReposity.getUserByNameAndEmail(
+      user.username,
+      user.email,
+    );
+
+    if (!_user[0]) throw new Error("No se encontro el usuario registrado.");
+
+    const matched = await bcrypt.compare(
+      user.password,
+      _user[0].password,
+    );
+
+    if (matched)
+      throw new Error(
+        "Nueva Contraseña debe ser distinta a la contraseña actual",
+      );
+
+    const hashedPassword = await bcrypt.hash(user.password, 10);
+
+    await UserReposity.editUser(_user[0].id, hashedPassword);
+
+    await UserReposity.revokeAllByUserId(_user[0].id);
   }
 
   static async editPassword(payload: UserPayload, user: UserEdit) {
@@ -188,7 +217,7 @@ export default class AuthService {
     await UserReposity.revokeAllByUserId(payload.id);
   }
 
-  static async deleteProfile(payload: UserPayload, user:UserDelete) {
+  static async deleteProfile(payload: UserPayload, user: UserDelete) {
     const _user = await UserReposity.getUserById(payload.id);
     if (!_user[0]) throw new Error("No se encontro el usuario registrado.");
 

@@ -18,16 +18,12 @@ export const register = async (req: Request, res: Response) => {
       .status(201)
       .json({ status: 201, message: "Usuario registrado correctamente" });
   } catch (err) {
-    // Esto tambien hay que arreglarlo y personalizarlo
     res.status(500).json({ status: 500, message: (err as Error).message });
   }
 };
 
 //Login
 export const login = async (req: Request, res: Response) => {
-  console.log('Login');
-  console.log('---------');
-  
   const user: UserLogin = req.body;
   const ip = req.ip!;
   const userAgent = req.headers["user-agent"] || "";
@@ -36,13 +32,11 @@ export const login = async (req: Request, res: Response) => {
     const { access_token, refreshToken, REFRESH_TTL_SEC } =
       await AuthService.token(payload, ip, userAgent);
 
-    console.log('Refresh: '+refreshToken);
-    console.log('---------');
     res
       .status(201)
       .cookie("refresh_token", refreshToken, {
         httpOnly: true,
-        secure: false, // TRUE PARA PRODUCCION
+        secure: true,
         sameSite: "none",
         path: "/api/auth",
         maxAge: REFRESH_TTL_SEC * 1000,
@@ -59,21 +53,16 @@ export const refresh = async (req: Request, res: Response) => {
   const jti = (req as any).refreshUser.jti;
   const ip = req.ip!;
   const userAgent = req.headers["user-agent"] || "";
-  console.log('Refresh');
-  console.log('---------');
-  console.log('Cookie: '+token);
-  
+
   try {
     const { newAccessToken, newRefresh, REFRESH_TTL_SEC } =
       await AuthService.rotationToken(token, jti, ip, userAgent);
 
-    console.log('New Refresh: '+newRefresh);
-    console.log('---------');
     res
       .status(201)
       .cookie("refresh_token", newRefresh, {
         httpOnly: true,
-        secure: false, // TRUE PARA PRODUCCION
+        secure: true,
         sameSite: "none",
         path: "/api/auth",
         maxAge: REFRESH_TTL_SEC * 1000,
@@ -104,6 +93,17 @@ export const logout = async (req: Request, res: Response) => {
   }
 };
 
+export const reset = async (req: Request, res: Response) => {
+  const user: { username: string; email: string; password: string } = req.body;
+  try {
+    await AuthService.resetPassword(user)
+
+    res.json({ status: 202, message: "Contraseña cambiada correctamente" });
+  } catch (error) {
+    res.status(500).json({ message: (error as Error).message });
+  }
+};
+
 //profile
 export const profile = async (req: Request, res: Response) => {
   const userPayload: UserPayload = (req as any).user;
@@ -118,20 +118,20 @@ export const profile = async (req: Request, res: Response) => {
 //Edit Profile
 export const editProfile = async (req: Request, res: Response) => {
   const payload: UserPayload = (req as any).user;
-  const userEdit: UserEdit = req.body
-  console.log(userEdit);
-  
+  const userEdit: UserEdit = req.body;
+
   const ip = req.ip!;
   const userAgent = req.headers["user-agent"] || "";
   try {
     await AuthService.editPassword(payload, userEdit);
-    const { access_token, refreshToken, REFRESH_TTL_SEC } = await AuthService.token(payload, ip, userAgent);
-   
+    const { access_token, refreshToken, REFRESH_TTL_SEC } =
+      await AuthService.token(payload, ip, userAgent);
+
     res
       .status(200)
       .cookie("refresh_token", refreshToken, {
         httpOnly: true,
-        secure: false, // TRUE PARA PRODUCCION
+        secure: true,
         sameSite: "none",
         path: "/api/auth",
         maxAge: REFRESH_TTL_SEC * 1000,
@@ -142,23 +142,25 @@ export const editProfile = async (req: Request, res: Response) => {
         access_token,
       });
   } catch (error) {
-    console.error(error)
     res.status(401).json({ status: 401, message: (error as Error).message });
   }
 };
 
 //Delete Profile
 
-export const deleteProfile = async (req:Request, res:Response) =>{
-  const payload: UserPayload = (req as any).user; 
-  const userDelete: UserDelete = req.body 
+export const deleteProfile = async (req: Request, res: Response) => {
+  const payload: UserPayload = (req as any).user;
+  const userDelete: UserDelete = req.body;
   try {
     await AuthService.deleteProfile(payload, userDelete);
 
     res
       .clearCookie("refresh_token", { path: "/api/auth" })
-      .json({ status: 200, message: "Usuario eliminado correctamente, adios :)" });
+      .json({
+        status: 200,
+        message: "Usuario eliminado correctamente, adios :)",
+      });
   } catch (error) {
     res.status(500).json({ message: (error as Error).message });
   }
-}
+};

@@ -7,6 +7,7 @@ import {
   editProfile,
   refresh,
   deleteProfile,
+  reset,
 } from "../controllers/auth.controller";
 import { authProfile, authRefresh } from "../middleware/auth.middleware";
 
@@ -18,7 +19,7 @@ router.post("/login", login);
 
 router.post('/logout', logout)
 
-router.post('/password/reset', ()=>{})//Ruta para cuando el usuario olvida la contraseña, como es una api sencilla didactica para los access_token, solo verifico el username o email ingresado por el user, y su nueva contraseña.
+router.post('/password/reset', reset)//Ruta para cuando el usuario olvida la contraseña, como es una api sencilla didactica para los access_token, solo verifico el username o email ingresado por el user, y su nueva contraseña.
 
 // Rutas del perfil autenticado
 router.get("/profile", authProfile, profile);
