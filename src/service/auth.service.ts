@@ -144,6 +144,24 @@ export default class AuthService {
     return userResponse.toObject();
   }
 
+  static async validateAccessToken(payload: UserPayload){
+    const _user = await UserReposity.getUserById(payload.id) 
+
+    if(!_user[0]) throw new Error('Token inválido - No se encontro el usuario')
+
+    if(_user[0].password_changed_at){
+      const passwordChangedAt = new Date(_user[0].password_changed_at).getTime()
+      const tokenIssuedAt = payload.iat! * 1000
+
+      console.log('PCA: '+passwordChangedAt);
+      console.log('IAT: '+ tokenIssuedAt);
+      
+      if(tokenIssuedAt < passwordChangedAt){
+        throw new Error('Token inválido')
+      }
+    }
+  }
+
   static async editPassword(payload: UserPayload, user: UserEdit) {
     const _user = await UserReposity.getUserById(payload.id);
 

@@ -1,8 +1,9 @@
 // src/middleware/auth.middleware.ts
 import { Request, Response, NextFunction } from "express";
 import { verifyToken,verifyRefreshToken } from "../utils/jwt";
+import AuthService from "../service/auth.service";
 
-export const authProfile = (req: Request, res: Response, next: NextFunction) => {
+export const authProfile = async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization || "";
   const [scheme, token] = authHeader.split(" ");
 
@@ -21,6 +22,10 @@ export const authProfile = (req: Request, res: Response, next: NextFunction) => 
   try {
     const decoded = verifyToken(token);
 
+    // console.log(decoded); // OUTPUT {...decoded, iat: 1776909967} por ejemplo
+    
+    await AuthService.validateAccessToken(decoded);
+
     (req as any).user = {
       id: decoded.id,
       username: decoded.username,
@@ -28,7 +33,9 @@ export const authProfile = (req: Request, res: Response, next: NextFunction) => 
     };
     next();
   } catch (err) {
-    res.status(401).json({ status: 401, message: "Invalid or expired token" });
+    console.log(err);
+    
+    res.status(401).json({ status: 401, message: 'Invalid or expired refresh token' });
     return;
   }
 };

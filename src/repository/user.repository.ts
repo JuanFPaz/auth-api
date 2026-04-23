@@ -58,7 +58,7 @@ export class UserReposity {
       const [res] = await this.pool.execute<RowDataPacket[]>(
         `
         UPDATE users
-        SET password = ?
+        SET password = ?, password_changed_at = NOW()
         WHERE users.id = ?
         `,
         [newPassword, id],
