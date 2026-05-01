@@ -1,29 +1,26 @@
 // src/middleware/auth.middleware.ts
 import { Request, Response, NextFunction } from "express";
-import { verifyToken,verifyRefreshToken } from "../utils/jwt";
+import { verifyToken, verifyRefreshToken } from "../utils/jwt";
 import AuthService from "../service/auth.service";
 
-export const authProfile = async (req: Request, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization || "";
-  const [scheme, token] = authHeader.split(" ");
-
-  if (scheme !== "Bearer" || !token) {
-    return res
-      .status(401)
-      .json({ message: "Missing or invalid Authorization header" });
-  }
-
-  if (!token)
-    return res.status(401).json({
-      status: 401,
-      message: "Missing or invalid Authorization header",
-    });
-
+export const authProfile = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
+    const authHeader = req.headers.authorization || "";
+    const [scheme, token] = authHeader.split(" ");
+
+    if (scheme !== "Bearer" || !token) {
+      throw new UnauthorizedError(
+        401,
+        "Missing or invalid Authorization header.",
+      );
+    }
+
     const decoded = verifyToken(token);
 
-    // console.log(decoded); // OUTPUT {...decoded, iat: 1776909967} por ejemplo
-    
     await AuthService.validateAccessToken(decoded);
 
     (req as any).user = {
@@ -32,12 +29,10 @@ export const authProfile = async (req: Request, res: Response, next: NextFunctio
       email: decoded.email,
     };
     next();
-  } catch (err) {    
-    res.status(401).json({ status: 401, message: 'Invalid or expired refresh token' });
-    return;
+  } catch (err) {
+    next(err)
   }
 };
-
 
 export const authRefresh = async (
   req: Request,

@@ -14,9 +14,7 @@ export const register = async (req: Request, res: Response) => {
   const user: UserRegister = req.body;
   try {
     await AuthService.register(user);
-    res
-      .status(201)
-      .json({ status: 201, message: "Usuario registrado correctamente" });
+    res.status(201).json({ message: "Usuario registrado correctamente" });
   } catch (err) {
     res.status(500).json({ status: 500, message: (err as Error).message });
   }
@@ -33,7 +31,7 @@ export const login = async (req: Request, res: Response) => {
       await AuthService.token(payload, ip, userAgent);
 
     res
-      .status(201)
+      .status(200)
       .cookie("refresh_token", refreshToken, {
         httpOnly: true,
         secure: true,
@@ -41,7 +39,7 @@ export const login = async (req: Request, res: Response) => {
         path: "/api/auth",
         maxAge: REFRESH_TTL_SEC * 1000,
       })
-      .json({ status: 201, message: "Credenciales Validas", access_token });
+      .json({ message: "Credenciales Validas", data: { access_token } });
   } catch (err) {
     res.status(500).json({ status: 500, message: (err as Error).message });
   }
@@ -59,7 +57,7 @@ export const refresh = async (req: Request, res: Response) => {
       await AuthService.rotationToken(token, jti, ip, userAgent);
 
     res
-      .status(201)
+      .status(200)
       .cookie("refresh_token", newRefresh, {
         httpOnly: true,
         secure: true,
@@ -68,9 +66,10 @@ export const refresh = async (req: Request, res: Response) => {
         maxAge: REFRESH_TTL_SEC * 1000,
       })
       .json({
-        status: 201,
         message: "Credenciales Validas",
-        access_token: newAccessToken,
+        data: {
+          access_token: newAccessToken,
+        },
       });
   } catch (error) {
     res.status(401).json({ status: 401, message: (error as Error).message });
@@ -86,8 +85,9 @@ export const logout = async (req: Request, res: Response) => {
     }
 
     res
+      .status(200)
       .clearCookie("refresh_token", { path: "/api/auth" })
-      .json({ status: 202, message: "Logged Out" });
+      .json({ message: "Logged Out" });
   } catch (error) {
     res.status(500).json({ message: (error as Error).message });
   }
@@ -96,11 +96,12 @@ export const logout = async (req: Request, res: Response) => {
 export const reset = async (req: Request, res: Response) => {
   const user: { username: string; email: string; password: string } = req.body;
   try {
-    await AuthService.resetPassword(user)
+    await AuthService.resetPassword(user);
 
-    res.json({ status: 202, message: "Contraseña cambiada correctamente" });
+    res.status(200).json({ message: "Contraseña cambiada correctamente" });
   } catch (error) {
-    res.status(500).json({ message: (error as Error).message });
+    console.log(error);
+    res.status(404).json({ message: (error as Error).message });
   }
 };
 
@@ -109,7 +110,7 @@ export const profile = async (req: Request, res: Response) => {
   const userPayload: UserPayload = (req as any).user;
   try {
     const data: UserResponse = await AuthService.profile(userPayload);
-    res.status(202).json({ status: 202, message: "Usuario Autenticado", data });
+    res.status(200).json({ message: "Usuario Autenticado", data });
   } catch (error) {
     res.status(401).json({ status: 401, message: (error as Error).message });
   }
@@ -137,7 +138,6 @@ export const editProfile = async (req: Request, res: Response) => {
         maxAge: REFRESH_TTL_SEC * 1000,
       })
       .json({
-        status: 200,
         message: "Contraseña cambiada correctamente",
         access_token,
       });
@@ -151,15 +151,16 @@ export const editProfile = async (req: Request, res: Response) => {
 export const deleteProfile = async (req: Request, res: Response) => {
   const payload: UserPayload = (req as any).user;
   const userDelete: UserDelete = req.body;
+
   try {
     await AuthService.deleteProfile(payload, userDelete);
 
     res
+      .status(200)
       .clearCookie("refresh_token", { path: "/api/auth" })
       .json({
-        status: 200,
-        message: "Usuario eliminado correctamente, adios :)",
-      });
+      message: "Usuario eliminado correctamente, adios :)",
+    });
   } catch (error) {
     res.status(500).json({ message: (error as Error).message });
   }
