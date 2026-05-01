@@ -34,8 +34,8 @@ export const login = async (req: Request, res: Response) => {
       .status(200)
       .cookie("refresh_token", refreshToken, {
         httpOnly: true,
-        secure: true,
-        sameSite: "none",
+        secure: false,
+        sameSite: "strict",
         path: "/api/auth",
         maxAge: REFRESH_TTL_SEC * 1000,
       })
@@ -60,8 +60,8 @@ export const refresh = async (req: Request, res: Response) => {
       .status(200)
       .cookie("refresh_token", newRefresh, {
         httpOnly: true,
-        secure: true,
-        sameSite: "none",
+        secure: false,
+        sameSite: "strict",
         path: "/api/auth",
         maxAge: REFRESH_TTL_SEC * 1000,
       })
@@ -132,8 +132,8 @@ export const editProfile = async (req: Request, res: Response) => {
       .status(200)
       .cookie("refresh_token", refreshToken, {
         httpOnly: true,
-        secure: true,
-        sameSite: "none",
+        secure: false,
+        sameSite: "strict",
         path: "/api/auth",
         maxAge: REFRESH_TTL_SEC * 1000,
       })

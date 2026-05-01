@@ -2,6 +2,9 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken, verifyRefreshToken } from "../utils/jwt";
 import AuthService from "../service/auth.service";
+import { InvalidTokenError } from "../common/errors/InvalidTokenError";
+import { UserNotFoundError } from "../common/errors/UserNotFoundError";
+import { UnauthorizedError } from "../common/errors/UnauthorizedError";
 
 export const authProfile = async (
   req: Request,
@@ -11,12 +14,8 @@ export const authProfile = async (
   try {
     const authHeader = req.headers.authorization || "";
     const [scheme, token] = authHeader.split(" ");
-
     if (scheme !== "Bearer" || !token) {
-      throw new UnauthorizedError(
-        401,
-        "Missing or invalid Authorization header.",
-      );
+      throw new InvalidTokenError("Missing or invalid Authorization header.");
     }
 
     const decoded = verifyToken(token);
@@ -30,7 +29,12 @@ export const authProfile = async (
     };
     next();
   } catch (err) {
-    next(err)
+    if (err instanceof UserNotFoundError || err instanceof InvalidTokenError) {
+      const error: UserNotFoundError | InvalidTokenError = err;
+      return next(new UnauthorizedError(401, error.message));
+    }
+
+    return next(err);
   }
 };
 
@@ -39,17 +43,19 @@ export const authRefresh = async (
   res: Response,
   next: NextFunction,
 ) => {
-  const token = req.cookies?.refresh_token;
-
-  if (!token) return res.status(401).json({ message: "No refresh token" });
-
   try {
+    const token = req.cookies?.refresh_token;
+
+    if (!token) throw new InvalidTokenError("Missing Refresh Toke.");
     const decoded = verifyRefreshToken(token);
     (req as any).refreshUser = { jti: decoded.jti, token };
     next();
   } catch (err) {
-    return res
-      .status(401)
-      .json({ message: "Invalid or expired refresh token" });
+    if (err instanceof InvalidTokenError) {
+      const error: InvalidTokenError = err;
+      return next(new UnauthorizedError(401, error.message));
+    }
+
+    return next(err);
   }
 };

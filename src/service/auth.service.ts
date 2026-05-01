@@ -1,3 +1,5 @@
+import { InvalidTokenError } from "../common/errors/InvalidTokenError";
+import { UserNotFoundError } from "../common/errors/UserNotFoundError";
 import { User } from "../models/user.model";
 import { UserReposity } from "../repository/user.repository";
 import type {
@@ -148,7 +150,7 @@ export default class AuthService {
     const _user = await UserReposity.getUserById(payload.id);
 
     if (!_user[0])
-      throw new Error("Token inválido - No se encontro el usuario");
+      throw new UserNotFoundError("Token inválido");
 
     if (_user[0].password_changed_at) {
       const passwordChangedAt = new Date(
@@ -157,7 +159,7 @@ export default class AuthService {
       const tokenIssuedAt = payload.iat! * 1000;
 
       if (tokenIssuedAt < passwordChangedAt) {
-        throw new Error("Token inválido");
+        throw new InvalidTokenError("Token inválido");
       }
     }
   }

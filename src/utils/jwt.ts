@@ -1,8 +1,9 @@
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
-import crypto from "node:crypto"
+import crypto from "node:crypto";
 import { UserPayload } from "../types/user.types";
 import { PersistRefresh } from "../types/refresh.types";
+import { InvalidTokenError } from "../common/errors/InvalidTokenError";
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET!;
@@ -21,7 +22,18 @@ export const signToken = (payload: UserPayload) => {
 };
 
 export const verifyToken = (token: string): any => {
-  return jwt.verify(token, JWT_SECRET);
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (err: any) {
+    console.log(err.name);
+    if (err.name === "TokenExpiredError") {
+      throw new InvalidTokenError("Token Expired");
+    }
+
+    if (err.name === "JsonWebTokenError") {
+      throw new InvalidTokenError("Invalid Token");
+    }
+  }
 };
 
 export const hashToken = (token: string) => {
@@ -41,7 +53,17 @@ export const signRefreshToken = (payload: UserPayload, jti: string) => {
 };
 
 export const verifyRefreshToken = (token: string): any => {
-  return jwt.verify(token, REFRESH_TOKEN_SECRET);
+  try {
+    return jwt.verify(token, REFRESH_TOKEN_SECRET);
+  } catch (err: any) {
+    if (err.name === "TokenExpiredError") {
+      throw new InvalidTokenError("Token Expired");
+    }
+
+    if (err.name === "JsonWebTokenError") {
+      throw new InvalidTokenError("Invalid Token");
+    }
+  }
 };
 
 export const persistRefreshToken = (persistRefresh: PersistRefresh) => {

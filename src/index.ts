@@ -3,6 +3,7 @@ import authRoutes from "./routes/auth.routes";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import { UserReposity } from "./repository/user.repository";
+import { UnauthorizedError } from "./common/errors/UnauthorizedError";
 
 const app: Application = express();
 const PORT = process.env.PORT ?? 3000;
@@ -30,7 +31,7 @@ app.get("/", async (req: Request, res: Response) => {
 
 app.use("/api/auth", authRoutes);
 
-app.use((err: any, req: Request, res: Response) => {
+app.use((err: any, req: Request, res: Response, next:NextFunction) => {
   if (err instanceof UnauthorizedError) {
     return res.status(err.status).json({ message: err.message });
   }

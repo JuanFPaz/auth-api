@@ -1,4 +1,4 @@
-class UnauthorizedError extends Error{
+export class UnauthorizedError extends Error{
     status:number;
 
     constructor(status:number, message:string){
