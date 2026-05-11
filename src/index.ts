@@ -2,8 +2,8 @@ import express, { Application, NextFunction, Request, Response } from "express";
 import authRoutes from "./routes/auth.routes";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import { UserReposity } from "./repository/user.repository";
 import { UnauthorizedError } from "./common/errors/UnauthorizedError";
+import { verifyConnection } from "./middleware/verify.middleware";
 
 const app: Application = express();
 const PORT = process.env.PORT ?? 3000;
@@ -20,14 +20,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-app.get("/", async (req: Request, res: Response) => {
-  try {
-    await UserReposity.checkConnection();
-    res.status(200).json({ status: 200, message: "Conexion Exitosa" });
-  } catch (error) {
-    res.status(500).json({ status: 500, message: (error as Error).message });
-  }
-});
+app.get("/",verifyConnection);
 
 app.use("/api/auth", authRoutes);
 

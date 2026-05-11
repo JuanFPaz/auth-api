@@ -150,7 +150,7 @@ export default class AuthService {
     const _user = await UserReposity.getUserById(payload.id);
 
     if (!_user[0])
-      throw new UserNotFoundError("Token inválido");
+      throw new UserNotFoundError("Usuario inválido");
 
     if (_user[0].password_changed_at) {
       const passwordChangedAt = new Date(

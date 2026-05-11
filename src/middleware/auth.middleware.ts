@@ -5,6 +5,7 @@ import AuthService from "../service/auth.service";
 import { InvalidTokenError } from "../common/errors/InvalidTokenError";
 import { UserNotFoundError } from "../common/errors/UserNotFoundError";
 import { UnauthorizedError } from "../common/errors/UnauthorizedError";
+import { ExpiredTokenError } from "../common/errors/ExpiredTokenError";
 
 export const authProfile = async (
   req: Request,
@@ -31,6 +32,10 @@ export const authProfile = async (
   } catch (err) {
     if (err instanceof UserNotFoundError || err instanceof InvalidTokenError) {
       const error: UserNotFoundError | InvalidTokenError = err;
+      return next(new UnauthorizedError(404, error.message));
+    }
+    if (err instanceof ExpiredTokenError) {
+      const error: ExpiredTokenError = err;
       return next(new UnauthorizedError(401, error.message));
     }
 
@@ -46,13 +51,17 @@ export const authRefresh = async (
   try {
     const token = req.cookies?.refresh_token;
 
-    if (!token) throw new InvalidTokenError("Missing Refresh Toke.");
+    if (!token) throw new InvalidTokenError("Missing Refresh Token.");
     const decoded = verifyRefreshToken(token);
     (req as any).refreshUser = { jti: decoded.jti, token };
     next();
   } catch (err) {
     if (err instanceof InvalidTokenError) {
       const error: InvalidTokenError = err;
+      return next(new UnauthorizedError(403, error.message));
+    }
+    if (err instanceof ExpiredTokenError) {
+      const error: ExpiredTokenError = err;
       return next(new UnauthorizedError(401, error.message));
     }
 

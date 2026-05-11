@@ -4,12 +4,13 @@ import crypto from "node:crypto";
 import { UserPayload } from "../types/user.types";
 import { PersistRefresh } from "../types/refresh.types";
 import { InvalidTokenError } from "../common/errors/InvalidTokenError";
+import { ExpiredTokenError } from "../common/errors/ExpiredTokenError";
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 const REFRESH_TOKEN_SECRET = process.env.REFRESH_SECRET!;
 const REFRESH_TTL_SEC = 60 * 60 * 24 * 7; // 7 days
-const EXPIRES_IN = "15m"; // short lifespan for security, extend if needed
+const EXPIRES_IN = "1m"; // short lifespan for security, extend if needed
 
 export const signToken = (payload: UserPayload) => {
   if (!JWT_SECRET) {
@@ -25,9 +26,8 @@ export const verifyToken = (token: string): any => {
   try {
     return jwt.verify(token, JWT_SECRET);
   } catch (err: any) {
-    console.log(err.name);
     if (err.name === "TokenExpiredError") {
-      throw new InvalidTokenError("Token Expired");
+      throw new ExpiredTokenError("Token Expired");
     }
 
     if (err.name === "JsonWebTokenError") {
@@ -57,7 +57,7 @@ export const verifyRefreshToken = (token: string): any => {
     return jwt.verify(token, REFRESH_TOKEN_SECRET);
   } catch (err: any) {
     if (err.name === "TokenExpiredError") {
-      throw new InvalidTokenError("Token Expired");
+      throw new ExpiredTokenError("Token Expired");
     }
 
     if (err.name === "JsonWebTokenError") {

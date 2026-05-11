@@ -72,7 +72,7 @@ export const refresh = async (req: Request, res: Response) => {
         },
       });
   } catch (error) {
-    res.status(401).json({ status: 401, message: (error as Error).message });
+    res.status(401).json({ message: (error as Error).message });
   }
 };
 
@@ -87,7 +87,7 @@ export const logout = async (req: Request, res: Response) => {
     res
       .status(200)
       .clearCookie("refresh_token", { path: "/api/auth" })
-      .json({ message: "Logged Out" });
+      .json({ message: "Sesion cerrada" });
   } catch (error) {
     res.status(500).json({ message: (error as Error).message });
   }
@@ -112,7 +112,7 @@ export const profile = async (req: Request, res: Response) => {
     const data: UserResponse = await AuthService.profile(userPayload);
     res.status(200).json({ message: "Usuario Autenticado", data });
   } catch (error) {
-    res.status(401).json({ status: 401, message: (error as Error).message });
+    res.status(401).json({ message: (error as Error).message });
   }
 };
 
@@ -139,10 +139,12 @@ export const editProfile = async (req: Request, res: Response) => {
       })
       .json({
         message: "Contraseña cambiada correctamente",
-        access_token,
+        data: {
+          access_token,
+        },
       });
   } catch (error) {
-    res.status(401).json({ status: 401, message: (error as Error).message });
+    res.status(401).json({ message: (error as Error).message });
   }
 };
 
@@ -155,10 +157,7 @@ export const deleteProfile = async (req: Request, res: Response) => {
   try {
     await AuthService.deleteProfile(payload, userDelete);
 
-    res
-      .status(200)
-      .clearCookie("refresh_token", { path: "/api/auth" })
-      .json({
+    res.status(200).clearCookie("refresh_token", { path: "/api/auth" }).json({
       message: "Usuario eliminado correctamente, adios :)",
     });
   } catch (error) {
